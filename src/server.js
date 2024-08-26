@@ -1,12 +1,42 @@
 import express from 'express';
 import { mapOrder } from '~/utils/sorts.js';
+import 'dotenv/config';
+
+const { IncomingWebhook } = require('@slack/webhook');
+
+// Read a url from the environment variables
+const url = process.env.SLACK_WEBHOOK_URL;
+
+// Initialize
+const webhook = new IncomingWebhook(url);
 
 const app = express();
 
 const hostname = 'localhost';
 const port = 8000;
 
-app.get('/', (req, res) => {
+async function sendSlackNotification(message) {
+  try {
+    await webhook.send({
+      text: message,
+      attachments: [
+        {
+          fallback: 'Error Notification',
+          color: 'danger',
+          title: 'Node.js Application Error',
+          text: message,
+          footer: 'Node.js API',
+          ts: Math.floor(Date.now() / 1000),
+        },
+      ],
+    });
+    console.log('Notification sent successfully');
+  } catch (error) {
+    console.error('Error sending notification to Slack:', error);
+  }
+}
+
+app.get('/', async (req, res) => {
   // Test Absolute import mapOrder
   console.log(
     mapOrder(
@@ -21,6 +51,7 @@ app.get('/', (req, res) => {
       'id'
     )
   );
+  await sendSlackNotification('This is a test notification from Node.js!');
   res.end('<h1>Hello World!</h1><hr>');
 });
 
